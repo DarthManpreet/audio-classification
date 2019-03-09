@@ -80,14 +80,14 @@ def voting_prediction_stats(ans, t1, f1, t2, f2):
 
 # Read all .wav files, convert them to frequency domain, and then
 # generate ground truth labels for data.
-print("\nReading Information")
+print("\nLoading .wav files")
 speech_folder_path = '/Users/Asher/Downloads/musicspeech/speechwav'
 music_folder_path = '/Users/Asher/Downloads/musicspeech/musicwav'
 speech_data = read_data(speech_folder_path)
 music_data = read_data(music_folder_path)
-print("Finished Reading")
+print("Finished Loading")
 t_data = np.concatenate((speech_data, music_data))
-print("Converting to Frequency Data")
+print("Converting to Frequency Domain")
 f_data = freq_conversion(t_data, SAMPLERATE)
 print("Finished Conversion ")
 labels = np.append(np.full(len(speech_data), 0),
