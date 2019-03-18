@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from keras import layers
 from keras.models import Sequential
 from keras.layers.recurrent import LSTM
-from keras.layers import Dense
+from keras.layers import Dense, ConvLSTM2D
 from keras import optimizers
 
 class Dataset:
@@ -66,8 +66,21 @@ class Dataset:
         self.train_data = np.array(self.train_data)
         self.train_label = np.array(self.train_label)
 
+        indices = np.arange(self.train_data.shape[0])
+        np.random.shuffle(indices)
+        print(indices)
+
+        self.train_data = self.train_data[indices]
+        self.train_label = self.train_label[indices]
+
         self.test_data = np.array(self.test_data)
         self.test_label = np.array(self.test_label)
+
+        indices = np.arange(self.test_data.shape[0])
+        np.random.shuffle(indices)
+        print(indices)
+        self.test_data = self.test_data[indices]
+        self.test_label = self.test_label[indices]
     
     def shuffle_audio_files(self, folder_path=None):
         """
@@ -92,21 +105,19 @@ class Dataset:
 
 #Initialize the dataset
 ds = Dataset()
-print(ds.train_data.shape)
-print(ds.train_label.shape)
 
 #Use Adam Optimzers
 opt = optimizers.Adam()
 
 #Configure Batch Size and Training Epochs
-batch_size = 3
-nb_epochs = 15
+batch_size = 1
+nb_epochs = 50
 
 #Build NN
 print('Build LSTM RNN model ...')
 model = Sequential()
-model.add(LSTM(units=128, dropout=0.05, recurrent_dropout=0.35, return_sequences=True, input_shape=(ds.train_data.shape[1], ds.train_data.shape[2])))
-model.add(LSTM(units=32, dropout=0.05, recurrent_dropout=0.35, return_sequences=False))
+model.add(LSTM(units=128, dropout=0.05, recurrent_dropout=0.4, return_sequences=True, input_shape=(ds.train_data.shape[1], ds.train_data.shape[2])))
+model.add(LSTM(units=64, dropout=0.05, recurrent_dropout=0.4, return_sequences=False))
 model.add(Dense(units=2, activation='softmax'))
 
 #Compile the NN
@@ -116,10 +127,30 @@ model.summary()
 
 #Train the model
 print("\nTraining ...")
-model.fit(x=ds.train_data, y=ds.train_label, batch_size=batch_size, epochs=nb_epochs)
-            
+history = model.fit(x=ds.train_data, y=ds.train_label, batch_size=batch_size, epochs=nb_epochs, shuffle=True, validation_split=0.2)
+
+#Plot training and validation accuracies
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.savefig('train_acc.png')
+plt.clf()
+
+# Plot training & validation loss values
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.savefig('train_loss.png')
+plt.clf()
+
 #Test the model
 print("\nTesting ...")
-score, accuracy = model.evaluate(x=ds.test_data, y=ds.test_label, batch_size=batch_size, verbose=1)
+score, accuracy = model.evaluate(x=ds.test_data, y=ds.test_label, batch_size=1, verbose=1)
 print("Test loss:  ", score)
 print("Test accuracy:  ", accuracy)
