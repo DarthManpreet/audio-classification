@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
 import os
 import librosa.display
@@ -8,6 +9,7 @@ from sklearn import svm
 from sklearn.model_selection import KFold
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn import preprocessing
+from sklearn.decomposition import PCA
 
 MINFOLDS = 6
 MAXFOLDS = 8
@@ -108,6 +110,7 @@ def voting_prediction_stats(ans, t1, f1, t2, f2):
     print(str(np.array(final_predictions)) + "Final Predictions")
     return total_correct / float(len(final_predictions)), final_predictions
 
+
 # Read all .wav files, convert them to frequency domain, generate
 # ground truth labels for data, and finally normalize the data.
 print("\nLoading .wav files")
@@ -120,10 +123,40 @@ t_data = np.concatenate((speech_data, music_data))
 print("Converting to Frequency Domain")
 f_data = freq_conversion(t_data, SAMPLERATE)
 f_data = preprocessing.normalize(f_data)
+t_data = preprocessing.normalize(t_data)
 print("Finished Conversion ")
 labels = np.append(np.full(len(speech_data), 0),
                    np.full(len(music_data), 1))
 
+##########################
+# PCA Data Visualization #
+##########################
+# Project frequency data down to its two most separable dimensions found
+# by Principle Component Analysis. Plot result.
+print("\n--------------------------")
+print("PRINCIPLE COMPONENT ANALYSIS")
+print("--------------------------")
+print("\nComputing PCA")
+pca = PCA(n_components=2)
+print np.shape(t_data)
+print np.shape(f_data)
+f_pca = pca.fit_transform(f_data)
+f_speech_pca_x = [i[0] for i in f_pca[64:]]
+f_speech_pca_y = [i[1] for i in f_pca[64:]]
+f_music_pca_x = [i[0] for i in f_pca[:64]]
+f_music_pca_y = [i[1] for i in f_pca[:64]]
+
+plt.scatter(f_speech_pca_x, f_speech_pca_y, color='red')
+plt.scatter(f_music_pca_x, f_music_pca_y, color='blue')
+red_patch = mpatches.Patch(color='red', label='Speech')
+blue_patch = mpatches.Patch(color='blue', label='Music')
+plt.legend(handles=[red_patch, blue_patch])
+plt.title('Frequency Data')
+plt.xlabel('Principle Component 1')
+plt.ylabel('Principle Component 2')
+plt.show()
+
+print("Finished PCA")
 
 #####################################
 # AdaBoosted Support Vector Machine #
@@ -131,9 +164,9 @@ labels = np.append(np.full(len(speech_data), 0),
 # This algorithm uses a support vector machine trained on frequency data
 # to make its predictions. A linear kernel is used for the SVM, and it is
 # AdaBoosted to increase its performance by around 3%.
-print("\n--------------------")
+print("\n--------------------------")
 print("ADABOOST")
-print("--------------------")
+print("--------------------------")
 
 # Arrays for printing out average accuracy and confusion matrices
 # over the course of an epoch
@@ -209,9 +242,9 @@ plt.show()
 # coin flip. The SVM's used are trained on either time or frequency
 # data, and use either a linear or gaussian kernel. For more detail
 # on the algorithm, look to the AdaBoost algorithm above.
-print("\n--------------------")
+print("\n--------------------------")
 print("MIXTURE OF EXPERTS")
-print("--------------------")
+print("--------------------------")
 
 time = []
 accuracy = []
